@@ -1,34 +1,42 @@
-#include <stdint.h>
 #include <cstdio>
+#include <gtk/gtk.h>
 
 enum ImageType 
 {
     JPG
 };
 
-struct Image
+class Image
 {
-    uint8_t* data;
-    int size;
-    int w;
-    int h;
-    int channels;
+    private:
+        static int numberWindows;
 
-    int tMin, tMax;
+    public:
+        uint8_t* data;
+        int size;
+        int w;
+        int h;
+        int channels;
 
-    Image(const char* fileName);
-    Image(int w, int h, int channels);
-    Image(const Image& img);
-    ~Image();
-    
-    ImageType getFileType(const char* fileName);
+        int tMin, tMax;
 
-    bool read(const char* fileName);
-    bool write(const char* fileName);
+        Image(const char* fileName);
+        Image(int w, int h, int channels);
+        Image(const Image& img);
+        ~Image();
+        
+        ImageType getFileType(const char* fileName);
 
-    void printImageData();
+        bool read(const char* fileName);
+        bool write(const char* fileName);
 
-    void mirrorImage(bool direction);
-    void applyLuminance();
-    void quantize(int n);
+        void printImageData();
+        void displayImage();
+
+        void mirrorImage(bool direction);
+        void applyLuminance();
+        void quantize(int n);
+
+        static int getNumberWindows();
+        static void incNumberWindows();
 };

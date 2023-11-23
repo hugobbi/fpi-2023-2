@@ -15,6 +15,12 @@ stb_image: https://github.com/nothings/stb
 #include "../headers/stb_image_write.h"
 #include <iostream>
 
+// Checks number os images displayed
+int Image::numberWindows = 0;
+
+int Image::getNumberWindows() { return numberWindows; }
+void Image::incNumberWindows() { numberWindows++; }
+
 // Constructor that reads image given filename
 Image::Image(const char* fileName)
 {
@@ -225,4 +231,43 @@ void Image::quantize(int n)
             }
         }
     }
+}
+
+void Image::displayImage()
+{
+    Image::incNumberWindows();
+
+    int bytesPerPixel = channels;
+    int cols = w;
+    int rows = h;
+
+    // Generate image pixel buffer
+    GdkPixbuf *pb = gdk_pixbuf_new_from_data(
+        data,
+        GDK_COLORSPACE_RGB,     // colorspace (must be RGB)
+        0,                      // has_alpha (0 for no alpha)
+        8,                      // bits-per-sample (must be 8)
+        cols, rows,             // cols, rows
+        cols * bytesPerPixel,   // rowstride
+        NULL, NULL              // destroy_fn, destroy_fn_data
+    );
+    GtkWidget *image = gtk_image_new_from_pixbuf(pb);
+    
+    // Create GTK window
+    GtkWidget *window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+    g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
+
+    // Window settings
+    gtk_window_set_title(GTK_WINDOW(window), "Image");
+    gtk_window_set_default_size(GTK_WINDOW(window), cols, rows);
+    gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
+
+    // Display window
+    gtk_container_add(GTK_CONTAINER(window), image);
+    gtk_widget_show_all(window);
+
+    // Save some memory
+    g_object_unref(pb);
+
+    std::cout << "Image displayed" << std::endl;
 }
