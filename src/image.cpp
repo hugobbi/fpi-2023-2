@@ -249,8 +249,8 @@ void Image::displayImage()
     int cols = w;
     int rows = h;
 
+    // Creates image pixel buffer
     uint8_t* dataDisplay = copyData();
-
     GdkPixbuf *pb = gdk_pixbuf_new_from_data(
         dataDisplay,
         GDK_COLORSPACE_RGB,  
@@ -262,13 +262,16 @@ void Image::displayImage()
     );
     GtkWidget *image = gtk_image_new_from_pixbuf(pb);
     
+    // Creates GTK window
     GtkWidget *window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
 
+    // Window settings
     gtk_window_set_title(GTK_WINDOW(window), "Image");
     gtk_window_set_default_size(GTK_WINDOW(window), cols, rows);
     gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
 
+    // Adds image to window
     gtk_container_add(GTK_CONTAINER(window), image);
     gtk_widget_show_all(window);
 
@@ -276,4 +279,16 @@ void Image::displayImage()
     g_object_unref(pb);
 
     std::cout << "Image displayed!" << std::endl;
+}
+
+void Image::computeHistogram()
+{
+    applyLuminance();
+
+    histogram = static_cast<int*>(calloc(256, sizeof(int)));
+
+    for (int i = 0; i < size; i += channels)
+    {
+        histogram[data[i]] += 1;
+    }
 }

@@ -20,6 +20,8 @@ class Image
 
         int tMin, tMax;
 
+        int* histogram;
+
         Image(const char* fileName);
         Image(int w, int h, int channels);
         Image(const Image& img);
@@ -36,6 +38,8 @@ class Image
         void mirrorImage(bool direction);
         void applyLuminance();
         void quantize(int n);
+
+        void computeHistogram();
 
         uint8_t* copyData();
 
