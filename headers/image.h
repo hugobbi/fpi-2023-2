@@ -37,6 +37,8 @@ class Image
         void applyLuminance();
         void quantize(int n);
 
+        uint8_t* copyData();
+
         static int getNumberWindows();
         static void incNumberWindows();
 };

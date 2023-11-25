@@ -233,6 +233,14 @@ void Image::quantize(int n)
     }
 }
 
+uint8_t* Image::copyData()
+{
+    uint8_t* dataDisplay = new uint8_t[size];
+    memcpy(dataDisplay, data, size);
+
+    return dataDisplay;
+}
+
 void Image::displayImage()
 {
     Image::incNumberWindows();
@@ -241,33 +249,31 @@ void Image::displayImage()
     int cols = w;
     int rows = h;
 
-    // Generate image pixel buffer
+    uint8_t* dataDisplay = copyData();
+
     GdkPixbuf *pb = gdk_pixbuf_new_from_data(
-        data,
-        GDK_COLORSPACE_RGB,     // colorspace (must be RGB)
-        0,                      // has_alpha (0 for no alpha)
-        8,                      // bits-per-sample (must be 8)
-        cols, rows,             // cols, rows
-        cols * bytesPerPixel,   // rowstride
-        NULL, NULL              // destroy_fn, destroy_fn_data
+        dataDisplay,
+        GDK_COLORSPACE_RGB,  
+        0,                    
+        8,                    
+        cols, rows,             
+        cols * bytesPerPixel,  
+        NULL, NULL              
     );
     GtkWidget *image = gtk_image_new_from_pixbuf(pb);
     
-    // Create GTK window
     GtkWidget *window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
 
-    // Window settings
     gtk_window_set_title(GTK_WINDOW(window), "Image");
     gtk_window_set_default_size(GTK_WINDOW(window), cols, rows);
     gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
 
-    // Display window
     gtk_container_add(GTK_CONTAINER(window), image);
     gtk_widget_show_all(window);
 
     // Save some memory
     g_object_unref(pb);
 
-    std::cout << "Image displayed" << std::endl;
+    std::cout << "Image displayed!" << std::endl;
 }
