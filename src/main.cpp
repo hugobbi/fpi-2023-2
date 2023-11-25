@@ -1,28 +1,19 @@
 #include <iostream>
+#include <thread>
 #include "../headers/image.h"
 
 int main(int argc, char* argv[])
 {
-    // Display images in windows
-    gtk_init(&argc, &argv);
+    auto app = Gtk::Application::create();
 
     Image test("../images/kity.jpg");
     test.displayImage();
 
-    std::cout << Image::getNumberWindows() << std::endl;
+    test.applyLuminance();
 
-    Image shrek("../images/shrek.jpg");
-    shrek.displayImage();
+    std::cout << "jbdkjas" << std::endl;
 
-    std::cout << Image::getNumberWindows() << std::endl;
-
-    Image av("../images/avo_e_pai.jpg");
-    av.displayImage();
-
-    std::cout << Image::getNumberWindows() << std::endl;
-
-    // Displays images
-    gtk_main();
+    app->run();
 
     return 0;
 }

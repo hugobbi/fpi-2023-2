@@ -1,5 +1,8 @@
 #include <cstdio>
-#include <gtk/gtk.h>
+#include <gtkmm.h>
+#include <gdkmm/pixbuf.h>
+#include <thread>
+#include <mutex>
 
 enum ImageType 
 {
@@ -36,6 +39,8 @@ class Image
         void mirrorImage(bool direction);
         void applyLuminance();
         void quantize(int n);
+
+        std::thread displayImageThread();
 
         static int getNumberWindows();
         static void incNumberWindows();
