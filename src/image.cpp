@@ -260,8 +260,3 @@ void Image::displayImage()
 
     window.show_all();
 }
-
-std::thread Image::displayImageThread()
-{
-    return std::thread(&Image::displayImage, this);
-}
