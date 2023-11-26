@@ -10,6 +10,8 @@ class Image
 {
     private:
         static int numberWindows;
+        static gboolean onDraw(GtkWidget *widget, cairo_t *cr, gpointer data);
+        static void drawHistogram(cairo_t* cr, int* data, int width, int height);
 
     public:
         uint8_t* data;
@@ -21,6 +23,14 @@ class Image
         int tMin, tMax;
 
         int* histogram;
+
+        // Used to transfer information in callback
+        struct CallbackData
+        {
+            int* data;
+            int width;
+            int height;
+        };
 
         Image(const char* fileName);
         Image(int w, int h, int channels);
@@ -40,6 +50,7 @@ class Image
         void quantize(int n);
 
         void computeHistogram();
+        void displayHistogram();
 
         uint8_t* copyData();
 

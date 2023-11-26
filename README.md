@@ -7,4 +7,4 @@ FPI - INF01046 - 2023/2
 
 stb_image: https://github.com/nothings/stb  
 
-To compile, use: `g++ main.cpp image.cpp -o main.out -Wall`
+To compile, use: `g++ main.cpp image.cpp -o main.out 'pkg-config --cflags gtk+-3.0 --libs gtk+-3.0'`

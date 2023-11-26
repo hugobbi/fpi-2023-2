@@ -10,7 +10,8 @@ stb_image: https://github.com/nothings/stb
 
 #define STB_IMAGE_IMPLEMENTATION
 #define STB_IMAGE_WRITE_IMPLEMENTATION
-#include "../headers/image.h"
+#include "../headers/image.hpp"
+#include "../headers/utils.hpp"
 #include "../headers/stb_image.h"
 #include "../headers/stb_image_write.h"
 #include <iostream>
@@ -291,4 +292,63 @@ void Image::computeHistogram()
     {
         histogram[data[i]] += 1;
     }
+}
+
+void Image::drawHistogram(cairo_t* cr, int* data, int width, int height) {
+    cairo_set_line_width(cr, 2);
+
+    int n = 256; // Number of bars
+    int* minMax = getMinMax(data, n); // Gets minimum and maximum of data
+
+    // Set the width and height of each bar
+    double bar_width = 5;
+    double bar_spacing = 2;
+
+    // Set the starting point for drawing
+    double x = 0.02 * width;
+    double y = 0.88 * height;
+
+    // Set the color for the bars
+    cairo_set_source_rgb(cr, 1, 0.6, 0.0);
+
+    for (int i = 0; i < n; i++) 
+    {
+        double dataNorm = (static_cast<double>(data[i]) - static_cast<double>(minMax[0])) / (static_cast<double>(minMax[1]) - static_cast<double>(minMax[0]));
+        double barHeight = 0.78*height * dataNorm;
+        if (barHeight < 0)
+            barHeight = 0;
+        cairo_rectangle(cr, x, y, bar_width, -barHeight);
+        cairo_fill(cr);
+
+        x += bar_width + bar_spacing;
+    }
+}
+
+gboolean Image::onDraw(GtkWidget* widget, cairo_t* cr, gpointer data) 
+{
+    CallbackData* cbData = static_cast<CallbackData*>(data);
+    drawHistogram(cr, cbData->data, cbData->width, cbData->height);
+
+    return FALSE;
+}
+
+void Image::displayHistogram()
+{
+    Image::incNumberWindows();
+
+    int width = 1920;
+    int height = 700;
+
+    GtkWidget* window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+    gtk_window_set_title(GTK_WINDOW(window), "Histogram");
+    gtk_window_set_default_size(GTK_WINDOW(window), width, height);
+    g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
+
+    GtkWidget* drawing_area = gtk_drawing_area_new();
+    gtk_container_add(GTK_CONTAINER(window), drawing_area);
+
+    CallbackData* callbackData = new CallbackData{histogram, width, height};
+    g_signal_connect(G_OBJECT(drawing_area), "draw", G_CALLBACK(onDraw), callbackData);
+
+    gtk_widget_show_all(window);
 }

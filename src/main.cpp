@@ -1,18 +1,14 @@
 #include <iostream>
-#include "../headers/image.h"
+#include "../headers/image.hpp"
 
 int main(int argc, char* argv[])
 {
     gtk_init(&argc, &argv);
 
-    Image img("../images/kity.jpg");
+    Image img("../images/avo_e_pai.jpg");
 
     img.computeHistogram();
-
-    for(int i = 0; i < 256; i++)
-        std::cout << i << ": " << img.histogram[i] << std::endl;
-
-    img.displayImage();
+    img.displayHistogram();
 
     if (Image::getNumberWindows() > 0)
         gtk_main();
