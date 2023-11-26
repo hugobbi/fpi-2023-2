@@ -69,4 +69,13 @@ double* computeMeanAndStandardDeviation(T* arr, int n)
     return(answ);
 }
 
+template <typename T>
+T* copyArray(T* arr, int n)
+{
+    T* newArr = new T[n];
+    memcpy(newArr, arr, n);
+
+    return newArr;
+}
+
 #endif

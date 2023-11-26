@@ -168,36 +168,8 @@ void Image::mirrorImage(bool direction)
 // Applies luminance to image
 void Image::applyLuminance()
 {
-    for(int i = 0; i < h; i++)
-    {
-        for (int j = 0; j < w; j++)
-        {
-            int idx_r = (i * w + j) * channels + 0;
-            int idx_g = (i * w + j) * channels + 1;
-            int idx_b = (i * w + j) * channels + 2;
-
-            //L = 0.299*R + 0.587*G + 0.114*B
-            uint8_t L = 0.299 * data[idx_r] + 0.587 * data[idx_g] + 0.114 * data[idx_b];
-            data[idx_r] = L;
-            data[idx_g] = L;
-            data[idx_b] = L;
-
-            // Gets min and max luminance for quantization funcion
-            if (i == 0 && j == 0)
-            {
-                tMin = L;
-                tMax = L;
-            }
-            else
-            {
-                if (L < tMin)
-                    tMin = L;
-                
-                if (L > tMax)
-                    tMax = L;
-            }
-        }
-    }
+    computeLuminance();
+    data = copyArray(dataLuminance, size);
 }
 
 // Quantizes the image given an integer n
@@ -242,7 +214,7 @@ uint8_t* Image::copyData()
     return dataDisplay;
 }
 
-void Image::displayImage()
+void Image::display()
 {
     Image::incNumberWindows();
 
@@ -282,15 +254,42 @@ void Image::displayImage()
     std::cout << "Image displayed!" << std::endl;
 }
 
+void Image::computeLuminance()
+{
+    dataLuminance = new uint8_t[size];
+    for (int i = 0; i < size; i += 3)
+    {
+        int ix = i;
+        uint8_t L = static_cast<uint8_t>(0.299 * data[ix] + 0.587 * data[ix+1] + 0.114 * data[ix+2]);
+        dataLuminance[ix] = L;
+        dataLuminance[ix+1] = L;
+        dataLuminance[ix+2] = L;
+
+        // Gets min and max luminance for quantization funcion
+        if (i == 0)
+        {
+            tMin = L;
+            tMax = L;
+        }
+        else
+        {
+            if (L < tMin)
+                tMin = L;
+            
+            if (L > tMax)
+                tMax = L;
+        }
+    }
+}
+
 void Image::computeHistogram()
 {
-    applyLuminance();
-
-    histogram = static_cast<int*>(calloc(256, sizeof(int)));
+    int n = 256;
+    histogram = static_cast<int*>(calloc(n, sizeof(int)));
 
     for (int i = 0; i < size; i += channels)
     {
-        histogram[data[i]] += 1;
+        histogram[dataLuminance[i]] += 1;
     }
 }
 
@@ -338,6 +337,7 @@ void Image::displayHistogram()
 
     int width = 1920;
     int height = 700;
+    int n = 256;
 
     GtkWidget* window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     gtk_window_set_title(GTK_WINDOW(window), "Histogram");
@@ -347,8 +347,91 @@ void Image::displayHistogram()
     GtkWidget* drawing_area = gtk_drawing_area_new();
     gtk_container_add(GTK_CONTAINER(window), drawing_area);
 
-    CallbackData* callbackData = new CallbackData{histogram, width, height};
+    int* histogramDisplay = new int[n];
+    for (int i = 0; i < n; i++)
+    {
+        histogramDisplay[i] = histogram[i];
+    }
+    CallbackData* callbackData = new CallbackData{histogramDisplay, width, height};
     g_signal_connect(G_OBJECT(drawing_area), "draw", G_CALLBACK(onDraw), callbackData);
 
     gtk_widget_show_all(window);
 }
+
+void Image::ajustBrightness(float b)
+{
+    if (b >= -255 && b <= 255)
+    {
+        for (int i = 0; i < size; i++)
+        {
+            float temp = static_cast<float>(data[i]) + b;
+            if (temp < 0)
+                data[i] = static_cast<uint8_t>(0);
+            else
+                if (temp > 255)
+                    data[i] = static_cast<uint8_t>(255);
+                else
+                    data[i] = static_cast<uint8_t>(temp);
+        }
+    }
+    else
+    {
+        std::cerr << "Brightness increase must be in [-255, 255]" << std::endl;
+    }
+}
+
+void Image::ajustContrast(float c)
+{
+    if (c > 0 && c <= 255)
+    {
+        for (int i = 0; i < size; i++)
+        {
+            float temp = static_cast<float>(data[i]) * c;
+            if (temp < 0)
+                data[i] = static_cast<uint8_t>(0);
+            else
+                if (temp > 255)
+                    data[i] = static_cast<uint8_t>(255);
+                else
+                    data[i] = static_cast<uint8_t>(temp);
+        }
+    }
+    else
+    {
+        std::cerr << "Constrast increase must be in (0, 255]" << std::endl;
+    }
+}
+
+void Image::applyNegative()
+{
+    for (int i = 0; i < size; i++)
+    {
+        data[i] = static_cast<u_int8_t>(255) - data[i];
+    }
+}
+
+void Image::histogramEqualization()
+{
+    int n = 256;
+    float alpha = (static_cast<float>(n - 1)) / (static_cast<float>(size / channels)); // Scalling factor
+
+    int* histCum = new int[n];
+    histCum[0] = alpha * histogram[0];
+    for (int i = 1; i < n; i++)
+    {
+        histCum[i] = histCum[i-1] + alpha * histogram[i];
+    }
+
+    delete[] histogram;
+    histogram = histCum;
+    
+    uint8_t* newData = new uint8_t[size];
+    for (int i = 0; i < size; i++)
+    {
+        newData[i] = histCum[data[i]];
+    }
+
+    delete[] data;
+    data = newData;
+}
+

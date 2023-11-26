@@ -15,6 +15,7 @@ class Image
 
     public:
         uint8_t* data;
+        uint8_t* dataLuminance;
         int size;
         int w;
         int h;
@@ -43,16 +44,23 @@ class Image
         bool write(const char* fileName);
 
         void printImageData();
-        void displayImage();
+        void display();
 
         void mirrorImage(bool direction);
         void applyLuminance();
         void quantize(int n);
 
+        void computeLuminance();
         void computeHistogram();
         void displayHistogram();
 
         uint8_t* copyData();
+
+        void ajustBrightness(float b);
+        void ajustContrast(float c);
+        void applyNegative();
+
+        void histogramEqualization();
 
         static int getNumberWindows();
         static void incNumberWindows();
