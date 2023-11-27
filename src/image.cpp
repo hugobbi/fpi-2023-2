@@ -53,6 +53,8 @@ Image::Image(const Image& img) : Image(img.w, img.h, img.channels)
 Image::~Image()
 {
     delete[] data;
+    delete[] dataLuminance;
+    delete[] histogram;
 }
 
 // Gets image extension from filename, currently only supports JPG
@@ -168,8 +170,7 @@ void Image::mirrorImage(bool direction)
 // Applies luminance to image
 void Image::applyLuminance()
 {
-    computeLuminance();
-    data = copyArray(dataLuminance, size);
+    memcpy(data, dataLuminance, size);
 }
 
 // Quantizes the image given an integer n
@@ -256,14 +257,21 @@ void Image::display()
 
 void Image::computeLuminance()
 {
+    if (dataLuminance != nullptr) 
+    {
+        delete[] dataLuminance;
+    }
+
     dataLuminance = new uint8_t[size];
-    for (int i = 0; i < size; i += 3)
+    for (int i = 0; i < size; i += channels)
     {
         int ix = i;
         uint8_t L = static_cast<uint8_t>(0.299 * data[ix] + 0.587 * data[ix+1] + 0.114 * data[ix+2]);
-        dataLuminance[ix] = L;
-        dataLuminance[ix+1] = L;
-        dataLuminance[ix+2] = L;
+
+        for (int j = 0; j < channels; j++)
+        {
+            dataLuminance[ix+j] = L;
+        }
 
         // Gets min and max luminance for quantization funcion
         if (i == 0)
@@ -284,16 +292,42 @@ void Image::computeLuminance()
 
 void Image::computeHistogram()
 {
-    int n = 256;
-    histogram = static_cast<int*>(calloc(n, sizeof(int)));
-
-    for (int i = 0; i < size; i += channels)
+    if (histogram != nullptr) 
     {
-        histogram[dataLuminance[i]] += 1;
+        delete[] histogram;
+    }
+
+    int n = 256;
+    histogram = new int[size]();
+
+    for (int i = 0; i < size; i+=channels) // Assuming 3-channel luminance data
+    {
+        histogram[data[i]]++;
     }
 }
 
 void Image::drawHistogram(cairo_t* cr, int* data, int width, int height) {
+    cairo_select_font_face(cr, "Sans", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
+    cairo_set_font_size(cr, 20.0);
+
+    cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
+
+    // Drawing numbers
+    double x = 0.015 * width;
+    double y = (0.88 * height) + 20;
+
+    const char* textZero = "0";
+    cairo_move_to(cr, x, y);
+    cairo_show_text(cr, textZero);
+
+    x = 0.935 * width;
+    y = (0.88 * height) + 20;
+
+    const char* text255 = "255";
+    cairo_move_to(cr, x, y);
+    cairo_show_text(cr, text255);
+    
+    // Drawing bars
     cairo_set_line_width(cr, 2);
 
     int n = 256; // Number of bars
@@ -303,9 +337,8 @@ void Image::drawHistogram(cairo_t* cr, int* data, int width, int height) {
     double bar_width = 5;
     double bar_spacing = 2;
 
-    // Set the starting point for drawing
-    double x = 0.02 * width;
-    double y = 0.88 * height;
+    x = 0.02 * width;
+    y = 0.88 * height;
 
     // Set the color for the bars
     cairo_set_source_rgb(cr, 1, 0.6, 0.0);
@@ -358,7 +391,7 @@ void Image::displayHistogram()
     gtk_widget_show_all(window);
 }
 
-void Image::ajustBrightness(float b)
+void Image::adjustBrightness(float b)
 {
     if (b >= -255 && b <= 255)
     {
@@ -380,7 +413,7 @@ void Image::ajustBrightness(float b)
     }
 }
 
-void Image::ajustContrast(float c)
+void Image::adjustContrast(float c)
 {
     if (c > 0 && c <= 255)
     {
@@ -413,25 +446,68 @@ void Image::applyNegative()
 void Image::histogramEqualization()
 {
     int n = 256;
-    float alpha = (static_cast<float>(n - 1)) / (static_cast<float>(size / channels)); // Scalling factor
-
+    float alpha = static_cast<float>(n-1) / (static_cast<float>(w) * static_cast<float>(h));
+        
     int* histCum = new int[n];
-    histCum[0] = alpha * histogram[0];
+    histCum[0] = histogram[0];
     for (int i = 1; i < n; i++)
     {
-        histCum[i] = histCum[i-1] + alpha * histogram[i];
+        histCum[i] = histCum[i-1] + histogram[i];
     }
-
-    delete[] histogram;
-    histogram = histCum;
     
     uint8_t* newData = new uint8_t[size];
-    for (int i = 0; i < size; i++)
+    for (int i = 0; i < size; i+=channels)
     {
-        newData[i] = histCum[data[i]];
+        for (int j = 0; j < channels; j++)
+        {
+            newData[i+j] = static_cast<uint8_t>(alpha * histCum[data[i+j]]);
+        }
     }
 
-    delete[] data;
-    data = newData;
+    memcpy(data, newData, size);
+    delete[] newData;
+}
+
+void Image::computeHistogramColorUsingLuminance()
+{
+    if (histogram != nullptr) 
+    {
+        delete[] histogram;
+    }
+
+    computeLuminance(); // Computes lumminance channel for RGB image
+
+    int n = 256;
+    histogram = new int[size]();
+
+    for (int i = 0; i < size; i+=channels) // Assuming 3-channel luminance data
+    {
+        histogram[dataLuminance[i]]++;
+    }
+}
+
+void Image::histogramEqualizationColorUsingLuminance()
+{
+    int n = 256;
+    float alpha = static_cast<float>(n-1) / (static_cast<float>(w) * static_cast<float>(h));
+        
+    int* histCum = new int[n];
+    histCum[0] = histogram[0];
+    for (int i = 1; i < n; i++)
+    {
+        histCum[i] = histCum[i-1] + histogram[i];
+    }
+    
+    uint8_t* newData = new uint8_t[size];
+    for (int i = 0; i < size; i+=channels)
+    {
+        for (int j = 0; j < channels; j++)
+        {
+            newData[i+j] = static_cast<uint8_t>(alpha * histCum[data[i+j]]);
+        }
+    }
+
+    memcpy(data, newData, size);
+    delete[] newData;
 }
 

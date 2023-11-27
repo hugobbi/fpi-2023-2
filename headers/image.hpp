@@ -14,16 +14,15 @@ class Image
         static void drawHistogram(cairo_t* cr, int* data, int width, int height);
 
     public:
-        uint8_t* data;
-        uint8_t* dataLuminance;
+        uint8_t* data = NULL;
+        uint8_t* dataLuminance = NULL;
+        int* histogram = NULL;
         int size;
         int w;
         int h;
         int channels;
 
         int tMin, tMax;
-
-        int* histogram;
 
         // Used to transfer information in callback
         struct CallbackData
@@ -52,15 +51,18 @@ class Image
 
         void computeLuminance();
         void computeHistogram();
+        void computeHistogramColorUsingLuminance();
         void displayHistogram();
 
         uint8_t* copyData();
 
-        void ajustBrightness(float b);
-        void ajustContrast(float c);
+        void adjustBrightness(float b);
+        void adjustContrast(float c);
         void applyNegative();
 
         void histogramEqualization();
+        void histogramEqualizationColorUsingLuminance();
+        void histogramMatching(const Image& target);
 
         static int getNumberWindows();
         static void incNumberWindows();
