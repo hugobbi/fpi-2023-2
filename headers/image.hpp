@@ -69,6 +69,11 @@ class Image
         void zoomOut(int sx, int sy);
         void zoomIn();
 
+        void applyConv2D(float* kernel);
+        void applyConv2D(int* kernel);
+        void approximateToInterval();
+        void clamppingAndAproximate();
+
         static int getNumberWindows();
         static void incNumberWindows();
 };

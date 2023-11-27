@@ -3,6 +3,8 @@
 
 #include "../headers/utils.hpp"
 #include <cmath>
+#include <cstring>
+#include <iostream>
 
 template <typename T>
 T getMax(T array, int n)
@@ -90,6 +92,46 @@ T* normalizeArray(T* arr, int n)
     }
 
     return normArr;
+}
+
+template <typename T>
+void flipMatVertically(T* matrix, int n, int m)
+{
+    int rowsSwapped = n / 2;
+    int rowSize = m * sizeof(T);
+    T* tempRow = new T[rowSize];
+
+    for (int i = 0; i < rowsSwapped; i++)
+    {
+        int topRow = i;
+        int bottomRow = n - i - 1;
+
+        memcpy(tempRow, matrix + topRow * m, rowSize);
+        memcpy(matrix + topRow * m, matrix + bottomRow * m, rowSize);
+        memcpy(matrix + bottomRow * m, tempRow, rowSize);
+    }
+
+    delete[] tempRow;
+}
+
+template <typename T>
+T* buildKernel()
+{
+    std::cout << "Build a 3x3 kernel that can be applied to convolve an image!" << std::endl;
+
+    int sizeKernel = 9;
+    T* kernel = new T[sizeKernel];
+    for (int i = 0; i < sizeKernel; i++)
+    {
+        std::cout << "Type entry " << i << ": " << std::endl;
+        while (!(std::cin >> kernel[i]))
+        {
+            std::cin.clear(); 
+            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); 
+            std::cout << "Invalid input. Try again: " << std::endl;
+        }
+    }
+    return kernel;
 }
 
 #endif

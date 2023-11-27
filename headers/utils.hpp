@@ -21,4 +21,10 @@ T* copyArray(T* arr, int size);
 template <typename T>
 T* normalizeArray(T* arr, int n);
 
+template <typename T>
+void flipMatVertically(T* matrix, int n, int m);
+
+template <typename T>
+T* buildKernel();
+
 #endif

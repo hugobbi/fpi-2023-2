@@ -690,7 +690,7 @@ void Image::zoomIn()
             {
                 if (j == newWidth - 1)
                 {
-                    newData[((newHeight-1) * newWidth +j) * channels + c] = newData[((newHeight-2) * newWidth + j) * channels + c];
+                    newData[((newHeight-1) * newWidth + j) * channels + c] = newData[((newHeight-2) * newWidth + j) * channels + c];
                 }
                 newData[(i * newWidth + (j + 1)) * channels + c] = 
                     static_cast<uint8_t>((newData[(i * newWidth + j) * channels + c] + newData[(i * newWidth + (j + 2)) * channels + c]) / 2);
@@ -724,4 +724,99 @@ void Image::zoomIn()
     data = new uint8_t[size];
     memcpy(data, newData, size);
     delete[] newData;
+}
+
+void Image::applyConv2D(int* kernel)
+{
+    uint8_t* newData = new uint8_t[size];
+    memcpy(newData, data, size);
+    int kernelRadius = 1;
+    int kernelSize = 3; 
+    flipMatVertically(kernel, kernelSize, kernelSize);
+    for (int i = kernelRadius; i < h - kernelRadius; i++)
+    {
+        for (int j = kernelRadius; j < w - kernelRadius; j++)
+        {
+            for (int c = 0; c < channels; c++)
+            {
+                int valuePixelKernelSum = 0;
+                for (int y = 0; y < kernelSize; y++)
+                {
+                    for (int x = 0; x < kernelSize; x++)
+                    {
+                        int valuePixel = data[((i - kernelRadius + y) * w + (j - kernelRadius + x)) * channels + c];
+                        valuePixelKernelSum += valuePixel * kernel[y * kernelSize + x];
+                    }
+                }
+                
+                if (valuePixelKernelSum > 255)
+                    valuePixelKernelSum = 255;
+                else
+                    if(valuePixelKernelSum < 0)
+                        valuePixelKernelSum = 0;
+
+                int pixelIndex = (i * w + j) * channels + c;                
+                newData[pixelIndex] = static_cast<uint8_t>(valuePixelKernelSum);
+            }
+        }
+    }
+
+    memcpy(data, newData, size);
+    delete[] newData;
+}
+
+void Image::applyConv2D(float* kernel)
+{
+    uint8_t* newData = new uint8_t[size];
+    memcpy(newData, data, size);
+    int kernelRadius = 1;
+    int kernelSize = 3; 
+    flipMatVertically(kernel, kernelSize, kernelSize);
+    for (int i = kernelRadius; i < h - kernelRadius; i++)
+    {
+        for (int j = kernelRadius; j < w - kernelRadius; j++)
+        {
+            for (int c = 0; c < channels; c++)
+            {
+                float valuePixelKernelSum = 0;
+                for (int y = 0; y < kernelSize; y++)
+                {
+                    for (int x = 0; x < kernelSize; x++)
+                    {
+                        float valuePixel = static_cast<float>(data[((i - kernelRadius + y) * w + (j - kernelRadius + x)) * channels + c]);
+                        valuePixelKernelSum += static_cast<float>(valuePixel * kernel[y * kernelSize + x]);
+                    }
+                }
+                
+                if (valuePixelKernelSum > 255)
+                    valuePixelKernelSum = 255;
+                else
+                    if(valuePixelKernelSum < 0)
+                        valuePixelKernelSum = 0;
+
+                int pixelIndex = (i * w + j) * channels + c;                
+                newData[pixelIndex] = static_cast<uint8_t>(valuePixelKernelSum);
+            }
+        }
+    }
+
+    memcpy(data, newData, size);
+    delete[] newData;
+}
+
+void Image::approximateToInterval()
+{
+    for (int i = 0; i < size; i++)
+    {
+        if (data[i] > 255)
+            data[i] = 255;
+        else
+            if(data[i] < 0)
+                data[i] = 0;
+    }
+}
+
+void Image::clamppingAndAproximate()
+{
+    adjustBrightness(127);
 }
