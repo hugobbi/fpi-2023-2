@@ -18,4 +18,7 @@ double* computeMeanAndStandardDeviation(T* arr, int n);
 template <typename T>
 T* copyArray(T* arr, int size);
 
+template <typename T>
+T* normalizeArray(T* arr, int n);
+
 #endif

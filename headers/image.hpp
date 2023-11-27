@@ -62,7 +62,12 @@ class Image
 
         void histogramEqualization();
         void histogramEqualizationColorUsingLuminance();
-        void histogramMatching(const Image& target);
+        void histogramMatching(Image& target);
+
+        void rotateImage90Degrees(bool direction);
+
+        void zoomOut(int sx, int sy);
+        void zoomIn();
 
         static int getNumberWindows();
         static void incNumberWindows();

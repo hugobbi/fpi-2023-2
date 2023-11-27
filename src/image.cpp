@@ -576,3 +576,152 @@ void Image::histogramMatching(Image& target)
     delete[] newData, sourceHistCum, targetHistCum, HM;
 }
 
+// Rotate image: true clockwise, false counterclockwise
+void Image::rotateImage90Degrees(bool direction)
+{
+    int rotatedHeight = w;
+    int rotatedWidth = h;
+    uint8_t* newData = new uint8_t[size];
+    for (int i = 0; i < h; i++) 
+    {
+        for (int j = 0; j < w; j++) 
+        {
+            int rotatedJ = i;
+            int rotatedI = rotatedHeight - 1 - j;
+
+            for (int c = 0; c < channels; ++c) 
+            {
+                if (direction)
+                    newData[((rotatedHeight - rotatedI) * rotatedWidth + (rotatedWidth - 1 - rotatedJ)) * channels + c] = data[(i * w + j) * channels + c];
+                else
+                    newData[(rotatedI * rotatedWidth + (rotatedWidth - 1 - rotatedJ)) * channels + c] = data[(i * w + j) * channels + c];                 
+            }
+        }
+    }
+
+    memcpy(data, newData, size);
+    h = rotatedHeight;
+    w = rotatedWidth;
+    delete[] newData;
+}
+
+void Image::zoomOut(int sx, int sy)
+{
+    if (sx <= 0 || sy <= 0)
+    {
+        std::cerr << "Zoom cannot be negative or zero" << std::endl;
+    }
+    else
+    {
+
+        int newH = h / sy;
+        int newW = w / sx;
+        int newSize = newH * newW * channels;
+        uint8_t* newData = new uint8_t[newSize];
+
+        for (int i = 0; i < newH; i++) 
+        {
+            for (int j = 0; j < newW; j++) 
+            {
+                int sumR = 0, sumG = 0, sumB = 0;
+
+                for (int y = 0; y < sy; y++) 
+                {
+                    for (int x = 0; x < sx; x++) 
+                    {
+                        int sourceY = i * sy + y;
+                        int sourceX = j * sx + x;
+
+                        if (sourceX < w && sourceY < h) 
+                        {
+                            int pixelIndex = (sourceY * w + sourceX) * channels;
+                            sumR += data[pixelIndex];
+                            sumG += data[pixelIndex + 1];
+                            sumB += data[pixelIndex + 2];
+                        }
+                    }
+                }
+
+                int kernelSize = sx * sy;
+                int pixelIndex = (i * newW + j) * channels;
+                newData[pixelIndex] = sumR / kernelSize;
+                newData[pixelIndex + 1] = sumG / kernelSize;
+                newData[pixelIndex + 2] = sumB / kernelSize;
+            }
+        }
+
+        w = newW;
+        h = newH;
+        size = newSize;
+        memcpy(data, newData, size);
+        delete[] newData;
+    }
+}
+
+void Image::zoomIn()
+{
+    int newWidth = w * 2;
+    int newHeight = h * 2;
+    int newSize = newWidth * newHeight * channels;
+
+    uint8_t* newData = new uint8_t[newSize]();
+
+    // Part I: Build new matrix
+    for (int i = 0; i < h; i++)
+    {
+        for (int j = 0; j < w; j++)
+        {
+            int newIndex = (i * 2 * newWidth + j * 2) * channels;
+            int oldIndex = (i * w + j) * channels;
+
+            for (int c = 0; c < channels; c++) 
+            {
+                newData[newIndex + c] = data[oldIndex + c];
+            }
+        }
+    }
+
+    // Part II: Linear interpolation
+    for (int i = 0; i < newHeight; i+=2)
+    {
+        for (int j = 0; j < newWidth; j+=2)
+        {
+            for (int c = 0; c < channels; c++)
+            {
+                if (j == newWidth - 1)
+                {
+                    newData[((newHeight-1) * newWidth +j) * channels + c] = newData[((newHeight-2) * newWidth + j) * channels + c];
+                }
+                newData[(i * newWidth + (j + 1)) * channels + c] = 
+                    static_cast<uint8_t>((newData[(i * newWidth + j) * channels + c] + newData[(i * newWidth + (j + 2)) * channels + c]) / 2);
+            }
+        }
+    }
+
+    for (int i = 0; i < newHeight; i += 2) 
+    {
+        for (int j = 0; j < newWidth; j++) 
+        {
+            for (int c = 0; c < channels; c++) 
+            {
+                if (i == newHeight - 1)
+                {
+                    newData[(i * newWidth + (newWidth-1)) * channels + c] = newData[(i * newWidth + (newWidth-2)) * channels + c];
+                }
+                else
+                {
+                    newData[((i + 1) * newWidth + j) * channels + c] = 
+                        static_cast<uint8_t>((newData[(i * newWidth + j) * channels + c] + newData[((i + 2) * newWidth + j) * channels + c]) / 2);
+                }
+            }
+        }
+    }
+
+    w = newWidth;
+    h = newHeight;
+    size = newSize;
+    delete[] data;
+    data = new uint8_t[size];
+    memcpy(data, newData, size);
+    delete[] newData;
+}
