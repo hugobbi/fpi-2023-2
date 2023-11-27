@@ -511,3 +511,68 @@ void Image::histogramEqualizationColorUsingLuminance()
     delete[] newData;
 }
 
+uint8_t findClosestTargetShade(float* sourceHistCum, float* tgtHistCum, int shade, int n)
+{    
+    uint8_t closestShade;
+    float minDifference = static_cast<float>(INFINITY);
+    for (int j = 0; j < n; j++)
+    {
+        if (sourceHistCum[shade] == tgtHistCum[j])
+            return static_cast<uint8_t>(j);
+        else if (abs(sourceHistCum[shade] - tgtHistCum[j]) < minDifference)
+        {
+            minDifference = abs(sourceHistCum[shade] - tgtHistCum[j]);
+            closestShade = static_cast<uint8_t>(j);
+        }
+    }
+        
+    return closestShade;
+}
+
+// Applies HM to grayscale images
+void Image::histogramMatching(Image& target)
+{
+    // Compute histograms
+    this->computeHistogram();
+    target.computeHistogram();
+
+    // Compute cumulative histograms
+    int n = 256;
+    float* sourceHistCum = new float[n];
+    float* targetHistCum = new float[n];
+    sourceHistCum[0] = this->histogram[0];
+    targetHistCum[0] = target.histogram[0];
+    for (int i = 1; i < n; i++)
+    {
+        sourceHistCum[i] = sourceHistCum[i-1] + this->histogram[i];
+        targetHistCum[i] = targetHistCum[i-1] + target.histogram[i];
+    }
+
+    // Normalize cumulative histograms
+    sourceHistCum = normalizeArray(sourceHistCum, n);
+    targetHistCum = normalizeArray(targetHistCum, n);
+
+    // Compute HM function
+    uint8_t* HM = new uint8_t[n]();
+    for (int i = 0; i < n; i++)
+        if(this->histogram[i] == 0)
+            continue;
+        else
+        {
+            HM[i] = findClosestTargetShade(sourceHistCum, targetHistCum, i, n);
+        }
+
+    // Translate HM function to original image
+    uint8_t* newData = new uint8_t[size];
+    for (int i = 0; i < size; i+=channels)
+    {
+        for (int j = 0; j < channels; j++)
+        {
+           newData[i+j] = HM[data[i+j]];
+        }
+    }
+
+    memcpy(data, newData, size);
+    delete[] newData, sourceHistCum, targetHistCum, HM;
+}
+

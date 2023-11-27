@@ -78,4 +78,18 @@ T* copyArray(T* arr, int n)
     return newArr;
 }
 
+template <typename T>
+T* normalizeArray(T* arr, int n)
+{
+    T* minMax = getMinMax(arr, n);
+    T* normArr = new T[n];
+
+    for (int i = 0; i < n; i++)
+    {
+        normArr[i] = static_cast<T>((arr[i]  - minMax[0]) / (minMax[1] - minMax[0]));
+    }
+
+    return normArr;
+}
+
 #endif
